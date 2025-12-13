@@ -8,7 +8,6 @@ interface KidoAvatarProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   isListening?: boolean;
   isSpeaking?: boolean;
-  isSleeping?: boolean;
   className?: string;
 }
 
@@ -32,40 +31,24 @@ function isWebGLAvailable(): boolean {
   }
 }
 
-function GiraffeModel({ isListening, isSpeaking, isSleeping }: { isListening: boolean; isSpeaking: boolean; isSleeping: boolean }) {
+function GiraffeModel({ isListening, isSpeaking }: { isListening: boolean; isSpeaking: boolean }) {
   const { scene } = useGLTF('/models/giraffe.glb');
   const modelRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
     if (modelRef.current) {
-      const time = state.clock.elapsedTime;
+      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.1;
+      modelRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
       
-      if (isSleeping) {
-        // Slow, gentle breathing motion
-        modelRef.current.position.y = -0.5 + Math.sin(time * 0.3) * 0.05;
-        // Head droops forward slightly
-        modelRef.current.rotation.x = 0.15 + Math.sin(time * 0.3) * 0.02;
-        // Very subtle sway
-        modelRef.current.rotation.z = Math.sin(time * 0.2) * 0.03;
-        modelRef.current.rotation.y = 0;
-        modelRef.current.scale.setScalar(1.8);
+      if (isSpeaking) {
+        modelRef.current.position.y += Math.abs(Math.sin(state.clock.elapsedTime * 4)) * 0.15;
+      }
+      
+      if (isListening) {
+        const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+        modelRef.current.scale.setScalar(scale * 1.8);
       } else {
-        // Normal floating animation
-        modelRef.current.position.y = Math.sin(time * 0.8) * 0.1;
-        modelRef.current.rotation.y = Math.sin(time * 0.3) * 0.1;
-        modelRef.current.rotation.x = 0;
-        modelRef.current.rotation.z = 0;
-        
-        if (isSpeaking) {
-          modelRef.current.position.y += Math.abs(Math.sin(time * 4)) * 0.15;
-        }
-        
-        if (isListening) {
-          const scale = 1 + Math.sin(time * 2) * 0.05;
-          modelRef.current.scale.setScalar(scale * 1.8);
-        } else {
-          modelRef.current.scale.setScalar(1.8);
-        }
+        modelRef.current.scale.setScalar(1.8);
       }
     }
   });
@@ -83,7 +66,6 @@ const KidoAvatar: React.FC<KidoAvatarProps> = ({
   size = 'lg', 
   isListening = false, 
   isSpeaking = false,
-  isSleeping = false,
   className = ''
 }) => {
   const [webGLSupported, setWebGLSupported] = useState(true);
@@ -115,7 +97,7 @@ const KidoAvatar: React.FC<KidoAvatarProps> = ({
             <directionalLight position={[5, 5, 5]} intensity={1} />
             <directionalLight position={[-5, 3, -5]} intensity={0.5} />
             <Suspense fallback={null}>
-              <GiraffeModel isListening={isListening} isSpeaking={isSpeaking} isSleeping={isSleeping} />
+              <GiraffeModel isListening={isListening} isSpeaking={isSpeaking} />
               <Environment preset="sunset" />
             </Suspense>
             <OrbitControls 
