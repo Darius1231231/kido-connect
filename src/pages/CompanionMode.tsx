@@ -5,12 +5,15 @@ import VoiceButton from '@/components/VoiceButton';
 import ActivityCard from '@/components/ActivityCard';
 import PromptBubble from '@/components/PromptBubble';
 import EmotionalBorder from '@/components/EmotionalBorder';
+import ChatMessages from '@/components/ChatMessages';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLeoChat } from '@/hooks/useLeoChat';
 
 const CompanionMode: React.FC = () => {
   const { setMode, setIsGatekeeperOpen, childMood } = useApp();
   const [isListening, setIsListening] = useState(false);
+  const { messages, isLoading, sendMessage } = useLeoChat();
 
   const handleSettingsClick = () => {
     setIsGatekeeperOpen(true);
@@ -20,8 +23,17 @@ const CompanionMode: React.FC = () => {
     if (activity === 'camera') {
       setMode('activePlay');
     }
-    // Handle other activities
+    if (activity === 'draw') {
+      sendMessage("I want to draw something!");
+    }
+    if (activity === 'story') {
+      sendMessage("Tell me a story!");
+    }
   };
+
+  // Get the latest Leo message for the prompt bubble
+  const latestLeoMessage = messages.filter(m => m.role === 'assistant').pop()?.content;
+  const defaultPrompt = "I'm bored of sitting! Can you find something RED in this room and show me? 🔴";
 
   return (
     <EmotionalBorder mood={childMood}>
@@ -45,6 +57,11 @@ const CompanionMode: React.FC = () => {
           </Button>
         </header>
 
+        {/* Chat messages area */}
+        {messages.length > 0 && (
+          <ChatMessages messages={messages} isLoading={isLoading} />
+        )}
+
         {/* Main content area */}
         <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
           {/* Left activity card */}
@@ -60,14 +77,15 @@ const CompanionMode: React.FC = () => {
           {/* Center: Avatar and prompt */}
           <div className="order-1 lg:order-2 flex flex-col items-center gap-6">
             <PromptBubble
-              message="I'm bored of sitting! Can you find something RED in this room and show me?"
-              showCamera
+              message={latestLeoMessage || defaultPrompt}
+              showCamera={!latestLeoMessage}
               onCameraClick={() => handleActivityClick('camera')}
             />
             
             <KidoAvatar 
               size="xl" 
               isListening={isListening}
+              isSpeaking={isLoading}
             />
           </div>
 
@@ -87,7 +105,11 @@ const CompanionMode: React.FC = () => {
           <VoiceButton
             isListening={isListening}
             onPress={() => setIsListening(true)}
-            onRelease={() => setIsListening(false)}
+            onRelease={() => {
+              setIsListening(false);
+              // For now, send a demo message since we don't have STT yet
+              sendMessage("Hello Leo! What should we do today?");
+            }}
           />
         </div>
       </div>
